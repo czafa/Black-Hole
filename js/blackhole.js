@@ -1,150 +1,53 @@
-// Configuração do Canvas
-const canvas = document.getElementById("bhCanvas");
-const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// Código com ajustes na iluminação e material do disco
+// Inclui também a modificação na animação para ajudar na visualização do disco
 
-// Variáveis
-const centerX = canvas.width / 2;
-const centerY = canvas.height / 2;
-const blackHoleRadius = 120;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 5, 10);
+camera.lookAt(new THREE.Vector3(0, 0, 0));
 
-// Função para desenhar o horizonte de eventos
-function drawEventHorizon() {
-    const gradient = ctx.createRadialGradient(
-        centerX,
-        centerY,
-        blackHoleRadius / 2,
-        centerX,
-        centerY,
-        blackHoleRadius
-    );
-    gradient.addColorStop(0, "black");
-    gradient.addColorStop(1, "rgba(0, 0, 0, 0.9)");
-    ctx.fillStyle = gradient;
+const canvas = document.createElement('canvas');
+const context = canvas.getContext('webgl2', { alpha: false });
+const renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, blackHoleRadius, 0, Math.PI * 2);
-    ctx.fill();
-}
+const blackHoleGeometry = new THREE.SphereGeometry(1, 32, 32);
+const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+const blackHole = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
+scene.add(blackHole);
 
-// Função para desenhar o disco de acreção com faixas giratórias
-function drawAccretionDisk() {
-    const innerRadius = blackHoleRadius + 30;
-    const outerRadius = blackHoleRadius + 200;
+const accretionDiskGeometry = new THREE.RingGeometry(1.5, 3, 64);
+const accretionDiskMaterial = new THREE.MeshBasicMaterial({ color: 0xffd700, side: THREE.DoubleSide, opacity: 0.75, transparent: true });
+const accretionDisk = new THREE.Mesh(accretionDiskGeometry, accretionDiskMaterial);
+accretionDisk.rotation.x = Math.PI / 2;
+scene.add(accretionDisk);
 
-    // Desenha faixas giratórias
-    for (let i = 0; i < 5; i++) {
-        const angleOffset = Math.PI * (i / 5);
-        ctx.beginPath();
-        ctx.ellipse(
-            centerX,
-            centerY,
-            outerRadius,
-            outerRadius / 4,
-            angleOffset,
-            0,
-            Math.PI * 2
-        );
-        ctx.strokeStyle = `rgba(255, ${200 - i * 40}, ${100 - i * 20}, 0.6)`;
-        ctx.lineWidth = 2 + i;
-        ctx.stroke();
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+directionalLight.position.set(0, 10, 10);
+scene.add(directionalLight);
+
+function addStars() {
+    const starsGeometry = new THREE.Geometry();
+    for (let i = 0; i < 1000; i++) {
+        const star = new THREE.Vector3();
+        star.x = THREE.Math.randFloatSpread(2000);
+        star.y = THREE.Math.randFloatSpread(2000);
+        star.z = THREE.Math.randFloatSpread(2000);
+        starsGeometry.vertices.push(star);
     }
-
-    // Gradiente para preencher o disco
-    const gradient = ctx.createRadialGradient(
-        centerX,
-        centerY,
-        innerRadius,
-        centerX,
-        centerY,
-        outerRadius
-    );
-    gradient.addColorStop(0, "rgba(255, 200, 100, 0.4)");
-    gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
-
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.ellipse(centerX, centerY, outerRadius, outerRadius / 4, 0, 0, Math.PI * 2);
-    ctx.fill();
+    const starsMaterial = new THREE.PointsMaterial({ color: 0x888888 });
+    const starField = new THREE.Points(starsGeometry, starsMaterial);
+    scene.add(starField);
 }
+addStars();
 
-// Função para desenhar as partículas orbitando com rastro
-let particles = [];
-function createParticles() {
-    for (let i = 0; i < 500; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * (200 - blackHoleRadius) + blackHoleRadius + 50;
-        particles.push({
-            x: centerX + Math.cos(angle) * distance,
-            y: centerY + Math.sin(angle) * distance,
-            angle,
-            speed: Math.random() * 0.01 + 0.005,
-        });
-    }
-}
-
-function updateParticles() {
-    particles.forEach((particle) => {
-        // Atualiza o ângulo e posição da partícula
-        particle.angle += particle.speed;
-        const distance = Math.sqrt((particle.x - centerX) ** 2 + (particle.y - centerY) ** 2);
-        particle.x = centerX + Math.cos(particle.angle) * distance;
-        particle.y = centerY + Math.sin(particle.angle) * distance;
-
-        // Desenha a partícula
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-        ctx.fill();
-    });
-}
-
-// Fundo com transição azul
-function drawBackground() {
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, "#000428");
-    gradient.addColorStop(1, "rgba(0, 0, 0, 0.9)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
-// Função para desenhar a lente gravitacional
-function drawGravitationalLens() {
-    const outerLensRadius = blackHoleRadius + 250;
-    const gradient = ctx.createRadialGradient(
-        centerX,
-        centerY,
-        blackHoleRadius + 10,
-        centerX,
-        centerY,
-        outerLensRadius
-    );
-    gradient.addColorStop(0, "rgba(255, 255, 255, 0.05)");
-    gradient.addColorStop(0.5, "rgba(255, 255, 255, 0.02)");
-    gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
-
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, outerLensRadius, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-// Animação principal
 function animate() {
-    // Fundo translúcido para criar rastros
-    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    drawBackground();
-    drawGravitationalLens();
-    drawAccretionDisk();
-    drawEventHorizon();
-    updateParticles();
-
     requestAnimationFrame(animate);
+    accretionDisk.rotation.x += 0.01;  // Ajusta a rotação do disco
+    renderer.render(scene, camera);
 }
 
-// Inicializa a simulação
-createParticles();
 animate();
