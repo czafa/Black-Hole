@@ -1,14 +1,10 @@
-/* Remove margens e padding do navegador */
 body, html {
     margin: 0;
     padding: 0;
     overflow: hidden;
+    background: radial-gradient(circle, #000428, #004e92);
 }
 
-/* Canvas ocupa toda a tela */
 canvas {
     display: block;
-    width: 100vw;
-    height: 100vh;
-    background: radial-gradient(circle, #000000, #0d0d0d, #1a1a1a);
 }
